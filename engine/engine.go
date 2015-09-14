@@ -20,9 +20,9 @@ type (
 	//Rule represents a single rule for checking a single metric
 	//including the condition and action to take when the rule is triggered
 	Rule struct {
-		name      string
-		condition AlertCondition
-		text      string
+		Name      string
+		Condition AlertCondition
+		Text      string
 	}
 
 	//AlertMessage is an interface defining a single function,
@@ -41,7 +41,7 @@ func (alert Rule) Send() error {
 
 	if config.PagerDuty {
 		pager.ServiceKey = config.PagerDutyAPIKey
-		_, err := pager.Trigger(alert.text)
+		_, err := pager.Trigger(alert.Text)
 		return err
 	}
 
@@ -58,7 +58,7 @@ func (alert Rule) Send() error {
 			auth,
 			config.EmailConfig.Username,
 			[]string{config.EmailConfig.Recipient},
-			[]byte(alert.text),
+			[]byte(alert.Text),
 		)
 
 		if err != nil {
@@ -72,9 +72,9 @@ func (alert Rule) Send() error {
 //AddAlert creates a new AlertRule and registers it
 func AddAlert(ruleName string, key string, text string, condition AlertCondition) {
 	rule := new(Rule)
-	rule.name = ruleName
-	rule.condition = condition
-	rule.text = text
+	rule.Name = ruleName
+	rule.Condition = condition
+	rule.Text = text
 
 	if rules[key] == nil {
 		rules[key] = make(map[string]Rule)
@@ -90,7 +90,7 @@ func Check(key string, value float64) (bool, error) {
 	ruleTriggered := false
 
 	for _, rule := range relatedRules {
-		ruleTriggered = rule.condition(value)
+		ruleTriggered = rule.Condition(value)
 		if ruleTriggered {
 			err := rule.Send()
 			if err != nil {
