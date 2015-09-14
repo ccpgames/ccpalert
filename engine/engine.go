@@ -1,25 +1,27 @@
 package engine
 
 import (
-	"errors"
-	"fmt"
 	"log"
 	"net/smtp"
 	"strconv"
 
+	"github.com/ccpgames/ccpalert/config"
 	"github.com/stvp/pager"
 )
 
-//a map of all registered rules
-var rules map[ruleID]alert
+var (
+	//A table (map of maps) of rules. The first map is indexed by the metric key,
+	//the second table by an alert name. This allows each metric to have multiple
+	//alert rules associated with it.
+	rules = make(map[string]map[string]Rule)
+)
 
 type (
-	//AlertRule represents a single rule for checking a single metric
+	//Rule represents a single rule for checking a single metric
 	//including the condition and action to take when the rule is triggered
-	alert struct {
+	Rule struct {
 		name      string
-		condition Rule
-		message   AlertMessage
+		condition AlertCondition
 		text      string
 	}
 
@@ -29,95 +31,73 @@ type (
 		Send(text string) error
 	}
 
-	//Rule is a function type for checking whether a rule is met
+	//AlertCondition is a function type for checking whether a rule is met
 	//if Rule returns true, an alert is triggered
-	Rule func(float64) bool
-
-	//EmailAlert represents an alert sent via SMTP
-	EmailAlert struct {
-		Recipient   string
-		Username    string
-		Password    string
-		EmailServer string
-		Port        int
-	}
-
-	//PagerDutyAlert represents an alert sent via the PagerDuty API
-	PagerDutyAlert struct {
-		APIKey string
-	}
-
-	ruleID struct {
-		ruleName, series, field string
-	}
+	AlertCondition func(float64) bool
 )
 
-//Alert sends an alet via PagerDuty
-func (pagerDuty PagerDutyAlert) Alert(text string) error {
-	pager.ServiceKey = pagerDuty.APIKey
-	_, err := pager.Trigger(text)
-	return err
-}
+//Send sends an alert
+func (alert Rule) Send() error {
 
-//Alert sends a alert via SMTP
-func (email EmailAlert) Alert(text string) error {
-	fmt.Println(text)
+	if config.PagerDuty {
+		pager.ServiceKey = config.PagerDutyAPIKey
+		_, err := pager.Trigger(alert.text)
+		return err
+	}
 
-	auth := smtp.PlainAuth(
-		"",
-		email.Username,
-		email.Password,
-		email.EmailServer,
-	)
+	if config.Email {
+		auth := smtp.PlainAuth(
+			"",
+			config.EmailConfig.Username,
+			config.EmailConfig.Password,
+			config.EmailConfig.EmailServer,
+		)
 
-	err := smtp.SendMail(
-		email.EmailServer+":"+strconv.Itoa(email.Port),
-		auth,
-		email.Username,
-		[]string{email.Recipient},
-		[]byte(text),
-	)
+		err := smtp.SendMail(
+			config.EmailConfig.EmailServer+":"+strconv.Itoa(config.EmailConfig.Port),
+			auth,
+			config.EmailConfig.Username,
+			[]string{config.EmailConfig.Recipient},
+			[]byte(alert.text),
+		)
 
-	if err != nil {
-		log.Fatal(err)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	return nil
 }
 
 //AddAlert creates a new AlertRule and registers it
-func AddAlert(ruleName string, series string, field string, text string, condition Rule, message AlertMessage) {
-	if rules == nil {
-		rules = make(map[ruleID]alert)
-	}
-
-	rule := new(alert)
+func AddAlert(ruleName string, key string, text string, condition AlertCondition) {
+	rule := new(Rule)
 	rule.name = ruleName
 	rule.condition = condition
 	rule.text = text
-	rule.message = message
-	rules[ruleID{ruleName, series, field}] = *rule
 
-	fmt.Println(rules)
+	if rules[key] == nil {
+		rules[key] = make(map[string]Rule)
+	}
+
+	rules[key][ruleName] = *rule
 }
 
 //Check a datapoint against a rule
-func Check(ruleName string, series string, field string, value float64) error {
-	id := new(ruleID)
-	id.ruleName = ruleName
-	id.series = series
-	rule := rules[ruleID{ruleName, series, field}]
+func Check(key string, value float64) (bool, error) {
 
-	if rule.name == "" {
-		return errors.New("rule not found")
-	}
+	relatedRules := rules[key]
+	ruleTriggered := false
 
-	if rule.condition(value) {
-		err := rule.message.Send(rule.text)
-		if err != nil {
-			return err
+	for _, rule := range relatedRules {
+		ruleTriggered = rule.condition(value)
+		if ruleTriggered {
+			err := rule.Send()
+			if err != nil {
+				return ruleTriggered, nil
+			}
 		}
 	}
 
-	return nil
+	return ruleTriggered, nil
 }
