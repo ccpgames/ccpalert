@@ -1,6 +1,6 @@
 # CCP Alert
 
-CCP Alert is the alerting component of CCPMetrics. It provides a simple threshold based alerting service and can send alerts via Email and PagerDuty. Metrics are sent to CCP Alert via a REST API and are checked against alerting rules which have been previously defined via CCPAlertQL. 
+CCP Alert is the alerting component of CCPMetrics. It provides a simple threshold based alerting service and can send alerts via Email and PagerDuty. Metrics are sent to CCP Alert via a REST API and are checked against alerting rules which have been previously defined via CCPAlertQL.
 
 ### CCPAlertQL
 Alerting rules are created via CCPAlertQL, a simple SQL inspired domain specific language. Queries to create alerts take the following form:
