@@ -21,6 +21,7 @@ type (
 	//including the condition and action to take when the rule is triggered
 	Rule struct {
 		Name      string
+		MetricKey string
 		Condition AlertCondition
 		Text      string
 	}
@@ -69,18 +70,23 @@ func (alert Rule) Send() error {
 	return nil
 }
 
-//AddAlert creates a new AlertRule and registers it
-func AddAlert(ruleName string, key string, text string, condition AlertCondition) {
+//CreateRule creates a new AlertRule and registers it
+func CreateRule(ruleName string, key string, text string, condition AlertCondition) {
 	rule := new(Rule)
 	rule.Name = ruleName
 	rule.Condition = condition
 	rule.Text = text
 
-	if rules[key] == nil {
-		rules[key] = make(map[string]Rule)
+	AddRule(*rule)
+}
+
+//AddRule adds a new rule
+func AddRule(newRule Rule) {
+	if rules[newRule.MetricKey] == nil {
+		rules[newRule.MetricKey] = make(map[string]Rule)
 	}
 
-	rules[key][ruleName] = *rule
+	rules[newRule.MetricKey][newRule.Name] = newRule
 }
 
 //Check a datapoint against a rule

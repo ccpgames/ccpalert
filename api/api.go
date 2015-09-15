@@ -1,12 +1,16 @@
 package api
 
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/ccpgames/ccpalert/ccpalertql"
+	"github.com/ccpgames/ccpalert/engine"
+)
+
 type (
 	ruleRequest struct {
-		Name      string
-		Recipient string
-		Key       string
-		Text      string
-		RawRule   string
+		RawAlertStatement string
 	}
 
 	checkRequest struct {
@@ -15,22 +19,23 @@ type (
 	}
 )
 
-// func addRule(w http.ResponseWriter, r *http.Request) {
-// 	decoder := json.NewDecoder(r.Body)
-// 	var request ruleRequest
-// 	err := decoder.Decode(&request)
-//
-// 	if err != nil {
-// 		http.Error(w, "invalid rule", 500)
-// 	}
-//
-// 	rule, err := ParseRule(request.RawRule)
-// 	if err != nil {
-// 		http.Error(w, "malformed rule", 500)
-// 	}
-//
-// 	//engine.AddAlert(request.Name, request.Key, request.Text, rule)
-// }
+func addRule(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var query ruleRequest
+	err := decoder.Decode(&query)
+
+	if err != nil {
+		http.Error(w, "invalid rule", 500)
+	}
+
+	rule, err := ccpalertql.ParseAlertStatement(query.RawAlertStatement)
+	if err != nil {
+		http.Error(w, "malformed rule", 500)
+	}
+
+	engine.AddRule(rule)
+}
+
 //
 // func check(w http.ResponseWriter, r *http.Request) {
 // 	decoder := json.NewDecoder(r.Body)
@@ -52,10 +57,11 @@ type (
 // 	}
 // }
 //
-// //ServeAPI serves the ccpalert API on port 8080
-// func ServeAPI() {
-// 	server := http.NewServeMux()
-// 	server.HandleFunc("/addRule", addRule)
-// 	server.HandleFunc("/check", check)
-// 	http.ListenAndServe(":8080", server)
-// }
+
+//ServeAPI serves the ccpalert API on port 8080
+func ServeAPI() {
+	server := http.NewServeMux()
+	server.HandleFunc("/addRule", addRule)
+	//server.HandleFunc("/check", check)
+	http.ListenAndServe(":8080", server)
+}
