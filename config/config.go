@@ -5,45 +5,21 @@ import (
 	"io/ioutil"
 	"log"
 
+	"github.com/ccpgames/ccpalert/db"
+	"github.com/ccpgames/ccpalert/engine"
+
 	"github.com/spf13/viper"
 )
 
 type (
-	//InfluxDBConfigStruct is a struct which describes the config neccessary
-	//to pull metrics from InfluxDB
-	InfluxDBConfigStruct struct {
-		Host     string
-		Port     string
-		Username string
-		Password string
-		DB       string
-	}
-
-	//EmailConfigStruct is a struct describing the configuration
-	//required to send an alert via email
-	EmailConfigStruct struct {
-		Recipient   string
-		Username    string
-		Password    string
-		EmailServer string
-		Port        int
+	//CCPAlertConfig is a struct representing the configuration for CCP Alert
+	CCPAlertConfig struct {
+		//InfluxDBConfig describes the configuration needed to communicate with InflxuDB
+		InfluxDBConfig db.InfluxDBConfig
+		//AlertEngineConfig represents the config for AlertEngine
+		AlertEngineConfig engine.Config
 	}
 )
-
-//PagerDutyAPIKey stores the api key for pagerduty
-var PagerDutyAPIKey string
-
-//PagerDuty indicates if alerts should be sent via PagerDuty
-var PagerDuty bool
-
-//Email indicates if alerts should be sent via email
-var Email bool
-
-//EmailConfig details the configuration for sending an alert via email
-var EmailConfig EmailConfigStruct
-
-//influxDBConfig describes the configuration needed to communicate with InflxuDB
-var InfluxDBConfig InfluxDBConfigStruct
 
 //ReadConfig takes a file path as a string and returns a string representing
 //the contents of that file
@@ -63,46 +39,46 @@ func ReadConfig(configFile string) ([]byte, error) {
 }
 
 //ParseConfig parses a YAML config  file
-func ParseConfig(rawConfig []byte) {
+func ParseConfig(rawConfig []byte) CCPAlertConfig {
+	parsedConfig := new(CCPAlertConfig)
+
 	viper.SetConfigType("yaml")
 	viper.ReadConfig(bytes.NewBuffer(rawConfig))
 
-	PagerDutyAPIKey = viper.GetString("PagerDutyAPIKey")
+	parsedConfig.AlertEngineConfig.PagerDutyAPIKey = viper.GetString("PagerDutyAPIKey")
 
-	EmailConfig = EmailConfigStruct{
-		EmailServer: viper.GetString("email.server"),
-		Username:    viper.GetString("email.username"),
-		Password:    viper.GetString("email.password"),
-		Port:        viper.GetInt("email.port"),
-		Recipient:   viper.GetString("email.recipient"),
-	}
+	parsedConfig.AlertEngineConfig.EmailServer = viper.GetString("email.server")
+	parsedConfig.AlertEngineConfig.EmailUsername = viper.GetString("email.username")
+	parsedConfig.AlertEngineConfig.EmailPassword = viper.GetString("email.password")
+	parsedConfig.AlertEngineConfig.EmailPort = viper.GetInt("email.port")
+	parsedConfig.AlertEngineConfig.EmailRecipient = viper.GetString("email.recipient")
 
-	InfluxDBConfig = InfluxDBConfigStruct{
-		Host:     viper.GetString("influx.host"),
-		Port:     viper.GetString("influx.port"),
-		Username: viper.GetString("influx.username"),
-		Password: viper.GetString("influx.password"),
-		DB:       viper.GetString("influx.db"),
-	}
+	parsedConfig.InfluxDBConfig = *new(db.InfluxDBConfig)
+	parsedConfig.InfluxDBConfig.InfluxDBHost = viper.GetString("influx.host")
+	parsedConfig.InfluxDBConfig.InfluxDBPort = viper.GetInt("influx.port")
+	parsedConfig.InfluxDBConfig.InfluxDBUsername = viper.GetString("influx.username")
+	parsedConfig.InfluxDBConfig.InfluxDBPassword = viper.GetString("influx.password")
+	parsedConfig.InfluxDBConfig.InfluxDBDB = viper.GetString("influx.password")
 
-	if (len(InfluxDBConfig.Host)) == 0 {
+	if (len(parsedConfig.InfluxDBConfig.InfluxDBHost)) == 0 {
 		panic("InfluxDB host undefined")
 	}
 
-	if (len(InfluxDBConfig.Port)) == 0 {
+	if parsedConfig.InfluxDBConfig.InfluxDBPort == 0 {
 		panic("InfluxDB port undefined")
 	}
 
-	if (len(InfluxDBConfig.Username)) == 0 {
+	if (len(parsedConfig.InfluxDBConfig.InfluxDBUsername)) == 0 {
 		panic("InfluxDB username undefined")
 	}
 
-	if (len(InfluxDBConfig.Password)) == 0 {
+	if (len(parsedConfig.InfluxDBConfig.InfluxDBPassword)) == 0 {
 		panic("InfluxDB password undefined")
 	}
 
-	if (len(InfluxDBConfig.DB)) == 0 {
+	if (len(parsedConfig.InfluxDBConfig.InfluxDBDB)) == 0 {
 		panic("InfluxDB db undefined")
 	}
 
+	return *parsedConfig
 }

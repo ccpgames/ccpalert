@@ -9,7 +9,10 @@ import (
 
 //ParseAlertStatement takes a raw alert statement query and parses it to a Rule struct
 func ParseAlertStatement(alertStatement string) (engine.Rule, error) {
-
+	if len(alertStatement) == 0 {
+		err := fmt.Errorf("Unable to parse rule")
+		return engine.Rule{}, err
+	}
 	scanner := NewScanner(alertStatement)
 	tokens := scanner.scan()
 	newRule := new(engine.Rule)
