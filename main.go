@@ -1,8 +1,22 @@
 package main
 
-import "github.com/ccpgames/ccpalert/api"
+import (
+	"flag"
+
+	"github.com/ccpgames/ccpalert/api"
+	"github.com/ccpgames/ccpalert/config"
+)
 
 func main() {
-	//api.PagerDutyAPIKey = "b424c48523b043e88138cfa874ac70fe"
+	configFilePath := flag.String("config", "", "configuration file")
+	flag.Parse()
+
+	configFile, err := config.ReadConfig(*configFilePath)
+
+	if err != nil {
+		panic("Unable to read config")
+	}
+
+	config.ParseConfig(configFile)
 	api.ServeAPI()
 }
