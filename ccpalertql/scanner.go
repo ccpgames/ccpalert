@@ -22,6 +22,10 @@ const (
 	ILLEGAL
 	//VALUE is a float value
 	VALUE
+	//SCHEDULE is the schedule keyword
+	SCHEDULE
+	//INFLUXDB is the influxdb keyword
+	INFLUXDB
 )
 
 type (

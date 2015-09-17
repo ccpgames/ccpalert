@@ -11,8 +11,8 @@ import (
 )
 
 type (
-	//DBScheduler represents an instance of the query scheduler
-	DBScheduler struct {
+	//Scheduler represents an instance of the query scheduler
+	Scheduler struct {
 		InfluxDBConfig *InfluxDBConfig
 		Engine         engine.AlertEngine
 		Stop           chan struct{}
@@ -30,17 +30,17 @@ type (
 )
 
 //NewScheduler returns a new instance of DBScheduler
-func NewScheduler(c *InfluxDBConfig, engine engine.AlertEngine) *DBScheduler {
-	return &DBScheduler{InfluxDBConfig: c, Engine: engine}
+func NewScheduler(c *InfluxDBConfig, engine engine.AlertEngine) *Scheduler {
+	return &Scheduler{InfluxDBConfig: c, Engine: engine}
 }
 
 //AddQuery adds a query to the scheduler
-func (db *DBScheduler) AddQuery(metricKey string, query string) {
+func (db *Scheduler) AddQuery(metricKey string, query string) {
 	db.Queries[metricKey] = query
 }
 
-//Scedule periodically executes predefined InfluxDB queries
-func (db *DBScheduler) Schedule() {
+//Schedule periodically executes predefined InfluxDB queries
+func (db *Scheduler) Schedule() {
 	ticker := time.NewTicker(60 * time.Second)
 
 	for {
@@ -56,14 +56,15 @@ func (db *DBScheduler) Schedule() {
 	}
 }
 
-func (db *DBScheduler) scheduledCheck(key, query string) {
-	value, err := db.executeQuery(query)
+func (db *Scheduler) scheduledCheck(key, query string) {
+	value, err := db.ExecuteQuery(query)
 	if err != nil {
 		db.Engine.Check(key, value)
 	}
 }
 
-func (db *DBScheduler) executeQuery(query string) (float64, error) {
+//ExecuteQuery executes an InfluxDB query and returns the resultant value
+func (db *Scheduler) ExecuteQuery(query string) (float64, error) {
 	host, err := url.Parse(fmt.Sprintf("http://%s:%d", db.InfluxDBConfig.InfluxDBHost, db.InfluxDBConfig.InfluxDBPort))
 	if err != nil {
 		log.Fatal(err)

@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	"github.com/ccpgames/ccpalert/api"
+	"github.com/ccpgames/ccpalert/ccpalertql"
 	"github.com/ccpgames/ccpalert/config"
 	"github.com/ccpgames/ccpalert/db"
 	"github.com/ccpgames/ccpalert/engine"
@@ -24,8 +25,8 @@ func main() {
 	engineInstance := engine.NewAlertEngine(&topLevelConfig.AlertEngineConfig)
 
 	dbscheduler := db.NewScheduler(&topLevelConfig.InfluxDBConfig, *engineInstance)
-	apiConfig := api.Config{Engine: engineInstance}
-	apiInstance := api.NewAPI(&apiConfig)
+	parser := ccpalertql.NewParser(engineInstance, dbscheduler)
+	apiInstance := api.NewAPI(engineInstance, parser)
 
 	go apiInstance.ServeAPI()
 	go dbscheduler.Schedule()
