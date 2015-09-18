@@ -1,10 +1,12 @@
 # CCP Alert
 
-CCP Alert is the alerting component of CCPMetrics. It provides a simple threshold based alerting service and can send alerts via Email and PagerDuty. Metrics are sent to CCP Alert via a REST API and are checked against alerting rules which have been previously defined via CCPAlertQL.
+CCP Alert is the alerting component of CCPMetrics. It provides a simple threshold based alerting service and can send alerts via Email and PagerDuty. Metrics are sent to CCP Alert via a REST API and are checked against alerting rules which have been previously defined via CCPAlertQL. 
 
 ### CCPAlertQL
-Alerting rules are created via CCPAlertQL, a simple SQL inspired domain specific language. Queries to create alerts take the following form:
+Alert rule are created via CCPAlertQL, a simple SQL inspired domain specific language. 
 
+#### Creating Alert Rules
+Alert rules have a name which identifies them, a metric which they are associated, a condition which is the central part of the rule and text, which describes the rule. The query to create a new alert rule takes the following form:
 ```
 ALERT <alert name> IF <metric name> <operator> <threshold value> TEXT <description of alert>
 ```
@@ -15,3 +17,31 @@ The alert name is simply an identifier for the alert. The metric name is the met
 ALERT cpuOnFireAlert IF superImportantServer.cpuUsage > 100 TEXT "Critical production server is heavily loaded"
 ALERT noplayers IF tq.currentPlayers == 0 TEXT "something has gone badly wrong"
 ```
+
+#### Creating Scheduled Database Queries
+Once a rule has been created, they can be evaluated against data points. Data points can be passed to CCP Alert via the API or alternatively they be can be pulled from InfluxDB
+scheduled queries. A scheduled query is an InfluxDB query which CCP Alert executes at regular intervals and evaluates against stored alerting rules. A scheduled InfluxDB query must
+return a single value and single point, multi value or multi point queries are not accepted. E.g. the query: 
+
+````
+select cpufree, cpuused, cpuidle from host1.cpu
+select cpuidle from host1.cpu
+select * from host1.cpu
+````
+are not a valid scheduled query, where as:
+````
+select max(cpuidle) from host1.cpu
+select last(cpufree) from host1.cpu
+````
+is an acceptble scheduled query. InfluxDB's aggregate functions are useful to return single points. So long as the query returns a single point and single value, the full range of InfluxQL functionality can be used. It is advisable to test your query via the InfluxDB web interfce, Chronograf or Grafana before scheduling it in CCP Alert.
+
+A scheduled query is pased to CCP Alert by encapsulating it in a SCHEDULE statement. A schedule statement takes the form:
+
+````
+SCHEDULE INFLUXDB <influx query> ON <influx database>
+````
+To provide specific examples:
+````
+SCHEDULE INFLUXDB "select last(value) from logout_count" ON public
+SCHEDULE INFLUXDB "select max(value) from host1.cpu" ON production
+````
