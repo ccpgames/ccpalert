@@ -1,9 +1,9 @@
 package engine
 
 import (
-	"log"
-	"net/smtp"
-	"strconv"
+	"fmt"
+
+	"gopkg.in/gomail.v2"
 
 	"github.com/stvp/pager"
 )
@@ -49,6 +49,7 @@ type (
 //NewAlertEngine returns a new instance of AlertEngine
 func NewAlertEngine(c *Config) *AlertEngine {
 	s := &AlertEngine{Config: c}
+	s.Rules = make(map[string]map[string]Rule)
 	return s
 }
 
@@ -61,24 +62,18 @@ func (engine *AlertEngine) Send(triggeredRule Rule) error {
 	}
 
 	if len(engine.Config.EmailServer) > 0 {
-		auth := smtp.PlainAuth(
-			"",
-			engine.Config.EmailUsername,
-			engine.Config.EmailPassword,
-			engine.Config.EmailServer,
-		)
+		m := gomail.NewMessage()
+		m.SetHeader("From", "ccpalert@ccpgames.com")
+		m.SetHeader("To", engine.Config.EmailRecipient)
+		m.SetHeader("Subject", fmt.Sprintf("ALERT %s as been triggered", triggeredRule.Name))
+		m.SetBody("text/html", triggeredRule.Text)
 
-		err := smtp.SendMail(
-			engine.Config.EmailServer+":"+strconv.Itoa(engine.Config.EmailPort),
-			auth,
-			engine.Config.EmailUsername,
-			[]string{engine.Config.EmailRecipient},
-			[]byte(triggeredRule.Text),
-		)
+		// Send the email to Bob
+		gomail.NewPlainDialer(engine.Config.EmailServer, engine.Config.EmailPort, "", "")
+		// if err := d.DialAndSend(m); err != nil {
+		// 	log.fatal(err)
+		// }
 
-		if err != nil {
-			log.Fatal(err)
-		}
 	}
 
 	return nil
@@ -106,17 +101,17 @@ func (engine *AlertEngine) AddRule(newRule Rule) {
 //Check a datapoint against a rule
 func (engine *AlertEngine) Check(key string, value float64) (bool, error) {
 	relatedRules := engine.Rules[key]
+
 	ruleTriggered := false
 
 	for _, rule := range relatedRules {
 		ruleTriggered = rule.Condition(value)
 		if ruleTriggered {
-			err := engine.Send(rule)
-			if err != nil {
-				return ruleTriggered, nil
-			}
+			engine.Send(rule)
+			// if err == nil {
+			// 	log.Info("Alert triggered")
+			// }
 		}
 	}
-
 	return ruleTriggered, nil
 }

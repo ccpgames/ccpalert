@@ -26,6 +26,8 @@ const (
 	SCHEDULE
 	//INFLUXDB is the influxdb keyword
 	INFLUXDB
+	//ON is a keyworkd
+	ON
 )
 
 type (

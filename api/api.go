@@ -40,7 +40,7 @@ func (api *CCPAlertAPI) query(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = api.Parser.Parse(query.RawAlertStatement)
+	_, err = api.Parser.Parse(query.RawAlertStatement)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}

@@ -23,12 +23,17 @@ func main() {
 	topLevelConfig := config.ParseConfig(configFile)
 
 	engineInstance := engine.NewAlertEngine(&topLevelConfig.AlertEngineConfig)
-
 	dbscheduler := db.NewScheduler(&topLevelConfig.InfluxDBConfig, *engineInstance)
 	parser := ccpalertql.NewParser(engineInstance, dbscheduler)
 	apiInstance := api.NewAPI(engineInstance, parser)
 
-	go apiInstance.ServeAPI()
+	err = parser.ParseAlertStatement("ALERT foobar IF foo < 2 TEXT \"oh gnoes\"")
+	if err != nil {
+		panic(err)
+	}
+	dbscheduler.AddQuery("foo", "public", "select last(value) from eve_client_disconnect")
+
 	go dbscheduler.Schedule()
+	apiInstance.ServeAPI()
 
 }
