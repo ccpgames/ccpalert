@@ -57,9 +57,9 @@ func (p *Parser) Parse(query string) (Result, error) {
 
 //ParseScheduleStatement parses a schedule query and schedules the contained InfluxDB query
 //A schedule statement takes the form of:
-//SCHEDULE INFLUXDB <influxdb query>
+//SCHEDULE <ID> INFLUXDB <influxdb query> ON <Db name?
 //To give examples:
-//SCHEDULE INFLUXDB "SELECT last(value) from myseries"
+//SCHEDULE alert1 INFLUXDB "SELECT last(value) from myseries" ON public
 func (p *Parser) ParseScheduleStatement(scheduleStatment string) error {
 	scanner := NewScanner(scheduleStatment)
 	tokens := scanner.scan()

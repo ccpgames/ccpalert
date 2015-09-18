@@ -33,15 +33,17 @@ are not a valid scheduled query, where as:
 select max(cpuidle) from host1.cpu
 select last(cpufree) from host1.cpu
 ````
-is an acceptble scheduled query. InfluxDB's aggregate functions are useful to return single points. So long as the query returns a single point and single value, the full range of InfluxQL functionality can be used. It is advisable to test your query via the InfluxDB web interfce, Chronograf or Grafana before scheduling it in CCP Alert.
+are acceptble scheduled queres. InfluxDB's aggregate functions are useful to return single points. So long as the query returns a single point and single value, the full range of InfluxQL functionality can be used. It is advisable to test your query via the InfluxDB web interfce, Chronograf or Grafana before scheduling it in CCP Alert.
 
 A scheduled query is pased to CCP Alert by encapsulating it in a SCHEDULE statement. A schedule statement takes the form:
 
 ````
-SCHEDULE INFLUXDB <influx query> ON <influx database>
+SCHEDULE <metric name> INFLUXDB <influx query> ON <influx database>
 ````
 To provide specific examples:
 ````
-SCHEDULE INFLUXDB "select last(value) from logout_count" ON public
-SCHEDULE INFLUXDB "select max(value) from host1.cpu" ON production
+SCHEDULE cpuOnFire INFLUXDB "select max(value) from host1.cpu where time > now() - 1h" ON public
+SCHEDULE noplayers INFLUXDB "select last(value) from tq.currentPlayers" ON production
 ````
+Note that the metric name in the schedule query should correspond to the metric name in the alert rule. Once a query is scheduled, the resulting metric will be checked against all
+corresponding alert rules.
