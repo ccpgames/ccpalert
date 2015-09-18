@@ -187,6 +187,8 @@ func (p *Parser) ParseAlertStatement(alertStatement string) error {
 		return err
 	}
 
+	newRule.Text = tokens[7].literal
+
 	if len(tokens) > 8 {
 		err := fmt.Errorf("trailing characters %q", tokens[8].literal)
 		return err

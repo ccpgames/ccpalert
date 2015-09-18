@@ -3,9 +3,8 @@ package engine
 import (
 	"fmt"
 
-	"gopkg.in/gomail.v2"
-
 	"github.com/stvp/pager"
+	"gopkg.in/gomail.v2"
 )
 
 type (
@@ -63,19 +62,17 @@ func (engine *AlertEngine) Send(triggeredRule Rule) error {
 
 	if len(engine.Config.EmailServer) > 0 {
 		m := gomail.NewMessage()
+		fmt.Println(triggeredRule.Text)
 		m.SetHeader("From", "ccpalert@ccpgames.com")
 		m.SetHeader("To", engine.Config.EmailRecipient)
 		m.SetHeader("Subject", fmt.Sprintf("ALERT %s as been triggered", triggeredRule.Name))
-		m.SetBody("text/html", triggeredRule.Text)
+		m.SetBody("text/plain", triggeredRule.Text)
 
-		// Send the email to Bob
-		gomail.NewPlainDialer(engine.Config.EmailServer, engine.Config.EmailPort, "", "")
-		// if err := d.DialAndSend(m); err != nil {
-		// 	log.fatal(err)
-		// }
-
+		dailer := gomail.Dialer{Host: engine.Config.EmailServer, Port: engine.Config.EmailPort}
+		if err := dailer.DialAndSend(m); err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 
@@ -98,7 +95,7 @@ func (engine *AlertEngine) AddRule(newRule Rule) {
 	engine.Rules[newRule.MetricKey][newRule.Name] = newRule
 }
 
-//Check a datapoint against a rule
+//Check an datapoint against a rule
 func (engine *AlertEngine) Check(key string, value float64) (bool, error) {
 	relatedRules := engine.Rules[key]
 
