@@ -62,7 +62,6 @@ func (engine *AlertEngine) Send(triggeredRule Rule) error {
 
 	if len(engine.Config.EmailServer) > 0 {
 		m := gomail.NewMessage()
-		fmt.Println(triggeredRule.Text)
 		m.SetHeader("From", "ccpalert@ccpgames.com")
 		m.SetHeader("To", engine.Config.EmailRecipient)
 		m.SetHeader("Subject", fmt.Sprintf("ALERT %s as been triggered", triggeredRule.Name))

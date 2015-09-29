@@ -81,6 +81,11 @@ func (s *Scanner) scan() []Token {
 				alertToken.literal = rune
 				alertToken.tokenType = ALERT
 				tokens = append(tokens, *alertToken)
+			case "SCHEDULE":
+				textToken := new(Token)
+				textToken.literal = rune
+				textToken.tokenType = SCHEDULE
+				tokens = append(tokens, *textToken)
 			case "IF":
 				ifToken := new(Token)
 				ifToken.literal = rune
@@ -90,6 +95,16 @@ func (s *Scanner) scan() []Token {
 				textToken := new(Token)
 				textToken.literal = rune
 				textToken.tokenType = TEXT
+				tokens = append(tokens, *textToken)
+			case "INFLUXDB":
+				textToken := new(Token)
+				textToken.literal = rune
+				textToken.tokenType = INFLUXDB
+				tokens = append(tokens, *textToken)
+			case "ON":
+				textToken := new(Token)
+				textToken.literal = rune
+				textToken.tokenType = ON
 				tokens = append(tokens, *textToken)
 			default:
 
@@ -123,10 +138,17 @@ func (s *Scanner) scanString() Token {
 			stringToken := new(Token)
 			stringToken.literal = strings.Join(fullString, "")
 			stringToken.tokenType = STRING
+
+			//trim quotations from string
+			stringToken.literal = stringToken.literal[1:]
+			stringToken.literal = stringToken.literal[:len(stringToken.literal)-1]
+
 			return *stringToken
 		}
+		fullString = append(fullString, " ")
 		s.next()
 	}
+
 	illegalToken := new(Token)
 	illegalToken.literal = strings.Join(fullString, "")
 	illegalToken.tokenType = ILLEGAL
